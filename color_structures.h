@@ -18,15 +18,14 @@ struct yuv {
 typedef struct rgb rgb;
 typedef struct yuv yuv;
 
-void rgb2yuv_float(const rgb& src, yuv& dst);
+void rgb2yuv_float(const rgb* src, yuv* dst);
 
-void yuv2rgb_float(const yuv& src, rgb& dst);
+void yuv2rgb_float(const yuv* src, rgb* dst);
 
-void rgb2yuv_fixed(const rgb& src, yuv& dst);
+void rgb2yuv_fixed(const rgb* src, yuv* dst);
 
-void yuv2rgb_fixed(const yuv& src, rgb& dst);
+void yuv2rgb_fixed(const yuv* src, rgb* dst);
 
-#define define_converter(name) \
-    void __attribute__(( ms_abi ))##name(const uint8_t *in, uint8_t *restrict out, \
+#define define_converter(name) void __attribute__(( ms_abi )) ##name(const uint8_t *in, uint8_t *restrict out, \
         size_t width, size_t height, \
         ptrdiff_t in_stride, ptrdiff_t out_stride)
