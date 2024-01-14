@@ -26,6 +26,20 @@ uint8_t get_maximum_delta(const uint8_t *arr1, const uint8_t *arr2,
     return ans;
 }
 
+uint64_t rnd() {
+    static uint64_t x = 1;
+    x ^= x >> 12;
+    x ^= x << 25;
+    x ^= x >> 27;
+    return x * 0x2545F4914F6CDD1DULL;
+}
+
+void fill_array_with_rubbish(uint8_t *arr, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        arr[i] = rnd();
+    }
+}
+
 struct test_with_padding make_bounds(const struct test *base,
         const size_t prefix_rgb, const size_t suffix_rgb,
         const size_t prefix_yuv, const size_t suffix_yuv,

@@ -31,11 +31,13 @@ size_t get_yuv_test_size(const struct test_with_padding* test);
 uint8_t get_maximum_delta(const uint8_t *arr1, const uint8_t *arr2,
     size_t byte_width, size_t height, ptrdiff_t stride);
 
+void fill_array_with_rubbish(uint8_t *arr, size_t len);
+
 typedef void*(*allocator)(size_t);
 typedef void(*mem_free)(void*);
 
-const uint8_t RGB_FILL = 0x71;
-const uint8_t YUV_FILL = 0x13;
+static const uint8_t RGB_FILL = 0x71;
+static const uint8_t YUV_FILL = 0x13;
 
 // Create new test, based on the other test.
 // Every row in rgb and yuv picture will be surrounded by specified number of bytes

@@ -10,7 +10,8 @@ add_executable(rgb_converter main.c
         converters.h
         src/float_cnvrt.c
         test_utils.h
-        test_utils.c)
+        test_utils.c
+        src/fixed_cnvrt.c)
 
 target_include_directories(rgb_converter PUBLIC ${CMAKE_SOURCE_DIR})
 target_compile_options(rgb_converter PUBLIC -maccumulate-outgoing-args)
