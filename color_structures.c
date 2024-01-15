@@ -66,3 +66,59 @@ void yuv2rgb_fixed(const yuv* src, rgb* dst) {
     dst->g = g >> 8;
     dst->b = b >> 8;
 }
+
+// Here conversions with 7 bits for float part
+
+void rgb2yuv_fixed7(const rgb* src, yuv* dst) {
+    // Fixed point, 16 bit, 7 for fractional part
+
+    // 0.299 = 38, 0.587 = 75, 0.114 = 15
+    uint16_t y = 38 * src->r + 75 * src->g + 15 * src->b;
+
+    // 129 = 16384, -0.168736 = -22, -0.331264 = -42, 0.5 = 128
+    // uint16_t cb = 16384 - 22 * src->r - 42 * src->g + 64 * src->b;
+    uint16_t cb = 16384 - 22 * src->r - 42 * src->g + 64 * src->b;
+
+    // 0.5 = 64, -0.418688 = -54, -0.081312 = -10
+    uint16_t cr = 16384 + 64 * src->r - 54 * src->g - 10 * src->b;
+
+    if (y < 0) y = 0;
+    if (cb < 0) cb = 0;
+    if (cr < 0) cr = 0;
+    y >>= 7;
+    cb >>= 7;
+    cr >>= 7;
+    if (y > 255) y = 255;
+    if (cb > 255) cb = 255;
+    if (cr > 255) cr = 255;
+
+    dst->y = y;
+    dst->cb = cb;
+    dst->cr = cr;
+    dst->dummy = 0;
+}
+
+void yuv2rgb_fixed6(const yuv* src, rgb* dst) {
+    // 1 = 64, 1.402 = 90
+    int16_t r = 64 * src->y + 90 * src->cr - 90 * 128;
+
+    // 1 = 64, 0.344136 = 22, 0.714136 = 46
+    int16_t g = 64 * src->y - 22 * src->cb + 22 * 128 - 46 * src->cr + 46 * 128;
+
+    // 1 = 64, 1.772 = 113
+    int16_t b = 64 * src->y + 113 * (src->cb - 128);
+
+    if (r < 0) r = 0;
+    if (g < 0) g = 0;
+    if (b < 0) b = 0;
+    r >>= 6;
+    g >>= 6;
+    b >>= 6;
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+
+    dst->r = r;
+    dst->g = g;
+    dst->b = b;
+}
