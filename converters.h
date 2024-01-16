@@ -22,3 +22,7 @@ void __attribute__(( ms_abi )) basic_fixed_rgb2yuv(const uint8_t *in, uint8_t *r
 void __attribute__(( ms_abi )) basic_fixed_yuv2rgb(const uint8_t *in, uint8_t *restrict out,
     size_t width, size_t height,
     ptrdiff_t in_stride, ptrdiff_t out_stride);
+
+void __attribute__(( ms_abi )) yuv2rgb_avx2(const uint8_t *in, uint8_t *restrict out,
+    size_t width, size_t height,
+    ptrdiff_t in_stride, ptrdiff_t out_stride);

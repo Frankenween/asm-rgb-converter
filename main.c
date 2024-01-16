@@ -28,21 +28,21 @@ const size_t PADDINGS_NUM = sizeof(PADDINGS) / sizeof(size_t);
 const size_t PERF_PADDINGS_NUM = sizeof(PERF_PADDINGS) / sizeof(size_t);
 
 uint8_t sample_rgb[] = {
-    15, 70, 44,      230, 151, 94,   73, 18, 194,
-    83, 13, 211,     128, 0, 39,     18, 7, 199,
-    228, 170, 134,   13, 37, 88,     14, 14, 255,
-    82, 11, 179,     255, 100, 29,   19, 254, 11
+    15, 70, 44,      230, 151, 94,   73, 18, 194,   73, 18, 194,   15, 70, 44,      230, 151, 94,   73, 18, 194,
+    83, 13, 211,     128, 0, 39,     18, 7, 199,    18, 7, 199,    83, 13, 211,     128, 0, 39,     18, 7, 199,
+    228, 170, 134,   13, 37, 88,     14, 14, 255,   14, 14, 255,   228, 170, 134,   13, 37, 88,     14, 14, 255,
+    82, 11, 179,     255, 100, 29,   19, 254, 11,   19, 254, 11,   82, 11, 179,     255, 100, 29,   19, 254, 11
 };
 
 uint8_t sample_yuv[] = {
-    51, 124, 103, 0,   168, 86, 172, 0,   55, 207, 141, 0,
-    57, 215, 147, 0,   43, 126, 189, 0,   32, 222, 118, 0,
-    183, 100, 160, 0,   36, 158, 112, 0,   41, 248, 108, 0,
-    51, 200, 150, 0,   138, 66, 211, 0,    156, 46, 30, 0,
+    51, 124, 103, 0,   168, 86, 172, 0,   55, 207, 141, 0,   55, 207, 141, 0,   51, 124, 103, 0,   168, 86, 172, 0,    55, 207, 141, 0,
+    57, 215, 147, 0,   43, 126, 189, 0,   32, 222, 118, 0,   32, 222, 118, 0,   57, 215, 147, 0,   43, 126, 189, 0,    32, 222, 118, 0,
+    183, 100, 160, 0,   36, 158, 112, 0,   41, 248, 108, 0,  41, 248, 108, 0,   183, 100, 160, 0,  36, 158, 112, 0,    41, 248, 108, 0,
+    51, 200, 150, 0,   138, 66, 211, 0,    156, 46, 30, 0,   156, 46, 30, 0,    51, 200, 150, 0,   138, 66, 211, 0,    156, 46, 30, 0,
 };
 
 struct test sample_test = {
-    .width = 3,
+    .width = 7,
     .height = 4,
     .rgb_data = sample_rgb,
     .yuv_data = sample_yuv
@@ -88,33 +88,44 @@ int _check_isomorphism(const struct test_with_padding* test, const converter c, 
 
 // Test if two converters are complement
 int test_isomorphism(const converter rgb2yuv_conv, const converter yuv2rgb_conv, const char* name) {
+    static const size_t TEST_SIZE = 9;
     printf("  Starts all colors isomorphism check : %s\n", name);
     uint8_t max_rgb_delta = 0;
     rgb worst_rgb = {0, 0, 0};
     yuv got_worst = {0, 0, 0, 0};
     rgb compl_worst = {0, 0, 0};
+
+
     for (int i = 0; i < 256; i++) {
         for (int j = 0; j < 256; j++) {
             for (int k = 0; k < 256; k++) {
-                rgb chnls = {i, j, k};
+                const rgb chnls = {i, j, k};
+                const rgb test_pixels[] = {chnls, chnls, chnls, chnls, chnls, chnls, chnls, chnls, chnls};
                 struct test_with_padding t = {
-                    .width = 1,
+                    .width = TEST_SIZE,
                     .height = 1,
-                    .rgb_next_row_delta = 3,
-                    .rgb_data = (uint8_t*) &chnls,
-                    .yuv_next_row_delta = 4,
+                    .rgb_next_row_delta = TEST_SIZE * 3,
+                    .rgb_data = (uint8_t*) test_pixels,
+                    .yuv_next_row_delta = TEST_SIZE * 4,
                     .yuv_data = 0
                 };
                 const int rgb2yuv = _check_isomorphism(&t, rgb2yuv_conv, yuv2rgb_conv);
                 if (rgb2yuv < 0) goto TEST_FAILED;
 
                 if (max_rgb_delta < rgb2yuv) {
+                    yuv yuv_dummy[TEST_SIZE];
+                    rgb rgb_dummy[TEST_SIZE];
+
                     max_rgb_delta = rgb2yuv;
                     worst_rgb.r = i;
                     worst_rgb.g = j;
                     worst_rgb.b = k;
-                    rgb2yuv_conv((uint8_t*) &chnls, (uint8_t*) &got_worst, 1, 1, 3, 4);
-                    yuv2rgb_conv((uint8_t*) &got_worst, (uint8_t*) &compl_worst, 1, 1, 4, 3);
+                    rgb2yuv_conv((uint8_t*) test_pixels, (uint8_t*) yuv_dummy, TEST_SIZE, 1,
+                        TEST_SIZE * 3, TEST_SIZE * 4);
+                    yuv2rgb_conv((uint8_t*) yuv_dummy, (uint8_t*) rgb_dummy, TEST_SIZE, 1,
+                        TEST_SIZE * 4, TEST_SIZE * 3);
+                    got_worst = yuv_dummy[0];
+                    compl_worst = rgb_dummy[0];
                 }
             }
         }
@@ -319,13 +330,16 @@ int test_performance(const converter rgb2yuv_conv, const converter yuv2rgb_conv,
 }
 
 int main() {
-    // test_correctness(basic_float_rgb2yuv, basic_float_yuv2rgb, "default float impl");
-    // printf("\n");
-    // test_performance(basic_float_rgb2yuv, basic_float_yuv2rgb, "default float impl");
-    // printf("\n\n");
+    test_correctness(basic_fixed_rgb2yuv, yuv2rgb_avx2, "avx yuv -> rgb");
+    printf("\n");
+
 
     test_correctness(basic_fixed_rgb2yuv, basic_fixed_yuv2rgb, "default float impl");
     printf("\n");
     test_performance(basic_fixed_rgb2yuv, basic_fixed_yuv2rgb, "default float impl");
+
+    printf("\n");
+    test_performance(basic_fixed_rgb2yuv, yuv2rgb_avx2, "avx2");
+
     return 0;
 }
