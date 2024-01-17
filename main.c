@@ -145,7 +145,7 @@ int test_isomorphism(const converter rgb2yuv_conv, const converter yuv2rgb_conv,
 // Check if converters pass sample test. They are allowed to have absolute mistake equal to 1
 int test_sample(const converter rgb2yuv_conv, const converter yuv2rgb_conv, const char *name) {
     static const int DELTA_TOLERANCE = 5;
-    printf("  Start padding test: %s\n", name);
+    printf("  Start sample test: %s\n", name);
 
     for (size_t pref_rgb_id = 0; pref_rgb_id < PADDINGS_NUM; pref_rgb_id++) {
         for (size_t suff_rgb_id = 0; suff_rgb_id < PADDINGS_NUM; suff_rgb_id++) {
@@ -211,7 +211,7 @@ int test_sample(const converter rgb2yuv_conv, const converter yuv2rgb_conv, cons
     }
 
     DONE:
-    printf("  Finish padding test: %s. OK\n", name);
+    printf("  Finish sample test: %s. OK\n", name);
     return 0;
 }
 
@@ -234,9 +234,9 @@ int test_correctness(const converter rgb2yuv_conv, const converter yuv2rgb_conv,
 // -1 if memory allocation failed
 // Place test data in rgb section, even if yuv2rgb is tested
 // In yuv place padding info
-uint64_t run_perf_test(struct test_with_padding *test, converter conv) {
+long double run_perf_test(struct test_with_padding *test, converter conv) {
     static const int TOTAL_RUNS = 20;
-    uint64_t eval_time = 0;
+    long double eval_time = 0;
 
     uint8_t *out = malloc(get_yuv_test_size(test));
     if (out == 0) {
@@ -262,10 +262,10 @@ uint64_t run_perf_test(struct test_with_padding *test, converter conv) {
 }
 
 int test_pref_no_padding(const converter rgb2yuv_conv, const converter yuv2rgb_conv) {
-    size_t rgb_worst_time = 0, yuv_worst_time = 0;
+    long double rgb_worst_time = 0, yuv_worst_time = 0;
     size_t rgb2yuv_worst_width = 0, rgb2yuv_worst_height = 0, yuv2rgb_worst_width = 0, yuv2rgb_worst_height = 0;
 
-    size_t rgb2yuv_avg_time = 0, yuv2rgb_avg_time = 0;
+    long double rgb2yuv_avg_time = 0, yuv2rgb_avg_time = 0;
     for (size_t w_id = 0; w_id < PERF_TEST_NUM; w_id++) {
         for (size_t h_id = 0; h_id < PERF_TEST_NUM; h_id++) {
             const size_t width = TEST_PERFORMANCE[w_id];
@@ -283,14 +283,14 @@ int test_pref_no_padding(const converter rgb2yuv_conv, const converter yuv2rgb_c
                 .yuv_next_row_delta = width * sizeof(yuv),
                 .yuv_data = 0
             };
-            const uint64_t rgb2yuv_time = run_perf_test(&test, rgb2yuv_conv);
-            if (rgb2yuv_time == -1) {
+            const long double rgb2yuv_time = run_perf_test(&test, rgb2yuv_conv);
+            if (rgb2yuv_time < 0) {
                 printf("  Failed rgb2yuv perf test %lux%lu\n", width, height);
                 free(data);
                 return -1;
             }
-            const uint64_t yuv2rgb_time = run_perf_test(&test, yuv2rgb_conv);
-            if (yuv2rgb_time == -1) {
+            const long double yuv2rgb_time = run_perf_test(&test, yuv2rgb_conv);
+            if (yuv2rgb_time < 0) {
                 printf("  Failed yuv2rgb perf test %lux%lu\n", width, height);
                 free(data);
                 return -1;
@@ -316,9 +316,9 @@ int test_pref_no_padding(const converter rgb2yuv_conv, const converter yuv2rgb_c
     rgb2yuv_avg_time /= PERF_TEST_NUM * PERF_TEST_NUM;
     yuv2rgb_avg_time /= PERF_TEST_NUM * PERF_TEST_NUM;
 
-    printf("  Avg time:\n    RGB->YUV: %lu\n    YUV->RGB: %lu\n", rgb2yuv_avg_time, yuv2rgb_avg_time);
-    printf("  Worst RGB->YUV time: %lu on %lux%lu\n", rgb_worst_time, rgb2yuv_worst_height, rgb2yuv_worst_width);
-    printf("  Worst YUV->RGB time: %lu on %lux%lu\n", yuv_worst_time, yuv2rgb_worst_height, yuv2rgb_worst_width);
+    printf("  Avg time:\n    RGB->YUV: %Lg\n    YUV->RGB: %Lg\n", rgb2yuv_avg_time, yuv2rgb_avg_time);
+    printf("  Worst RGB->YUV time: %Lg on %lux%lu\n", rgb_worst_time, rgb2yuv_worst_height, rgb2yuv_worst_width);
+    printf("  Worst YUV->RGB time: %Lg on %lux%lu\n", yuv_worst_time, yuv2rgb_worst_height, yuv2rgb_worst_width);
     return 0;
 }
 
@@ -330,16 +330,31 @@ int test_performance(const converter rgb2yuv_conv, const converter yuv2rgb_conv,
 }
 
 int main() {
-    test_correctness(basic_fixed_rgb2yuv, yuv2rgb_avx2, "avx yuv -> rgb");
-    printf("\n");
+    converter rgb2yuv_check[] = {
+        basic_fixed_rgb2yuv,
+        rgb2yuv_avx2
+    };
+    converter yuv2rgb_check[] = {
+        basic_fixed_yuv2rgb,
+        yuv2rgb_avx2
+    };
+    const char* names[] = {
+        "default fixed impl",
+        "avx2"
+    };
 
+    printf("Start correctness tests\n");
+    for (size_t i = 0; i < sizeof(names) / sizeof(char*); i++) {
+        test_correctness(rgb2yuv_check[i], yuv2rgb_check[i], names[i]);
 
-    test_correctness(basic_fixed_rgb2yuv, basic_fixed_yuv2rgb, "default float impl");
-    printf("\n");
-    test_performance(basic_fixed_rgb2yuv, basic_fixed_yuv2rgb, "default float impl");
+    }
+    printf("Finished correctness tests\n\n");
 
-    printf("\n");
-    test_performance(basic_fixed_rgb2yuv, yuv2rgb_avx2, "avx2");
+    printf("Start performance tests\n");
+    for (size_t i = 0; i < sizeof(names) / sizeof(char*); i++) {
+        test_performance(rgb2yuv_check[i], yuv2rgb_check[i], names[i]);
+    }
+    printf("Finished performance tests\n");
 
     return 0;
 }

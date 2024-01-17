@@ -4,7 +4,7 @@ enable_language(ASM_NASM)
 
 set(CMAKE_C_STANDARD 11)
 
-set_property(SOURCE src/avx2_conv.asm PROPERTY LANGUAGE ASM_NASM)
+set_property(SOURCE src/avx2_conv_yuv2rgb.asm PROPERTY LANGUAGE ASM_NASM)
 
 
 add_executable(rgb_converter main.c
@@ -15,7 +15,8 @@ add_executable(rgb_converter main.c
         test_utils.c
         src/float_cnvrt.c
         src/fixed_cnvrt.c
-        src/avx2_conv.asm
+        src/avx2_conv_yuv2rgb.asm
+        src/avx2_conv_rgb2yuv.asm
 )
 
 target_include_directories(rgb_converter PRIVATE ${CMAKE_SOURCE_DIR})

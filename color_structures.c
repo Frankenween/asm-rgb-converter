@@ -82,9 +82,6 @@ void rgb2yuv_fixed7(const rgb* src, yuv* dst) {
     // 0.5 = 64, -0.418688 = -54, -0.081312 = -10
     uint16_t cr = 16384 + 64 * src->r - 54 * src->g - 10 * src->b;
 
-    if (y < 0) y = 0;
-    if (cb < 0) cb = 0;
-    if (cr < 0) cr = 0;
     y >>= 7;
     cb >>= 7;
     cr >>= 7;
