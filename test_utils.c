@@ -91,3 +91,31 @@ void free_test(struct test_with_padding *test, const mem_free freeer) {
     test->rgb_data = 0;
     test->yuv_data = 0;
 }
+
+uint8_t max(const uint8_t a, const uint8_t b) {
+    return a < b ? b : a;
+}
+
+uint8_t abs_diff_uint8(const uint8_t a, const uint8_t b) {
+    return a < b ? b - a : a - b;
+}
+
+uint8_t get_rgb_delta(const rgb p1, const rgb p2) {
+    return max(
+        abs_diff_uint8(p1.r, p2.r),
+        max(
+            abs_diff_uint8(p1.g, p2.g),
+            abs_diff_uint8(p1.b, p2.b)
+        )
+    );
+}
+
+uint8_t get_yuv_delta(const yuv p1, const yuv p2) {
+    return max(
+        abs_diff_uint8(p1.y, p2.y),
+        max(
+            abs_diff_uint8(p1.cb, p2.cb),
+            abs_diff_uint8(p1.cr, p2.cr)
+        )
+    );
+}

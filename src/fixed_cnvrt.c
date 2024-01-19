@@ -7,7 +7,7 @@ void __attribute__(( ms_abi )) basic_fixed_rgb2yuv(const uint8_t *in, uint8_t *r
         const rgb *row_pixels_rgb = (const rgb*)(in + in_stride * row);
         yuv *row_pixels_yuv = (yuv*)(out + out_stride * row);
         for (size_t p = 0; p < width; p++) {
-            rgb2yuv_fixed(&row_pixels_rgb[p], &row_pixels_yuv[p]);
+            rgb2yuv_fixed7(&row_pixels_rgb[p], &row_pixels_yuv[p]);
         }
     }
 }

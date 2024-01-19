@@ -37,8 +37,7 @@ section .text
 ; arg6 - out_stride :: ptrdiff_t
 ; return - void
 yuv2rgb_avx2:
-    cmp r8, 4
-    jb SMALL_WIDTH ; too small width, not implemented
+
     vpxor ymm3, ymm3, ymm3 ; ymm3 = 0
 
     START_ROW_PROCESSING:
@@ -47,6 +46,9 @@ yuv2rgb_avx2:
     mov r11, rdx
 
     PROCESS_SIMD:
+    cmp rax, 6 ; 6 * 3 = 18 > 16, so can just write xmm
+    jb SMALL_WIDTH ; too small width, not implemented
+
     ; ymm0 = [y cb cr x | y cb cr x | y cb cr x | y cb cr x]
     ; ymm1 = [cr y cb x | cr y cb x | cr y cb x | cr y cb x]
     ; ymm2 = [cb cr y x | cb cr y x | cb cr y x | cb cr y x]
@@ -65,7 +67,7 @@ yuv2rgb_avx2:
 
     vpaddw ymm1, ymm1, ymm2
     vpaddw ymm1, ymm1, ymm0
-    vpaddsw ymm1, ymm1, [rel YUV2RGB_BIAS] ; add with saturation
+    vpaddw ymm1, ymm1, [rel YUV2RGB_BIAS] ; add with saturation
     vpmaxsw ymm0, ymm1, ymm3 ; word = max(word, 0)
     vpsrlw ymm0, ymm0, 6 ; divide all by 64
     ; [r g b 0 | r g b 0 | r g b 0 | r g b 0]
@@ -81,8 +83,6 @@ yuv2rgb_avx2:
     vpshufb xmm0, xmm0, [rel YUV2RGB_RGB_IN_SHUFFLE]
     ; xmm0 is [(rgb) (rgb) (rgb) (rgb) 0000] now
 
-    cmp rax, 8
-    jb WRITE_RGB_EXACT
     movdqu [r11], xmm0 ; stored
     add r10, 4 * 4 ;
     add r11, 3 * 4
@@ -98,22 +98,99 @@ yuv2rgb_avx2:
     DONE:
     ret
 
-    WRITE_RGB_EXACT:
-    ; we always need to write 4 pixels, this is 12 bytes. 12 = 8 + 4
-    vpextrq [r11], xmm0, 0
-    vpextrd [r11 + 8], xmm0, 2
-    add r10, 4 * 4 ;
-    add r11, 3 * 4
-    sub rax, 4
-    jz FINISHED_ROW
-    ; we have less then 4 yuv pixels
-    ; r10 -= (16 - 4 * rax) <=> r10 += 4 * rax - 16
-    ; r11 -= (12 - 3 * rax)
-    lea r10, [4 * rax + r10 - 16]
-    add r11, rax
-    lea r11, [r11 + 2 * rax - 12]
-    mov rax, 4
-    jmp PROCESS_SIMD
-
     SMALL_WIDTH:
-    ud2
+    cmp rax, 0
+    je FINISHED_ROW
+
+    ; save registers for calculations
+    ; rax is a register, which used as a loop counter, so save and restore it in loop
+    push rcx ; here keep sum
+    push rdx
+    push r12
+    push r13
+    push r14
+    push rbx
+
+    mov rbx, 255
+    xor rdx, rdx
+
+    MANUAL_YUV2RGB_LOOP:
+    push rax
+    ; ALL MANIPULATIONS ARE SIGNED
+
+    ;mov [r11], WORD 0 ; clear place for rgb pixel
+    ;mov [r11 + 2], BYTE 0
+    movzx r12, BYTE [r10] ; y
+    movzx r13, BYTE [r10 + 1] ; cb
+    movzx r14, BYTE [r10 + 2] ; cr
+
+    shl r12, 6 ; r12 = 64 * y
+
+    ; r = 64 * y + 90 * cr + 90 * 128
+    mov rcx, r12
+    ; rcx = 64 * y
+
+    lea rax, [r14 - 128] ; cr - 128
+    imul rax, 90 ; rax = (cr - 128) * 90
+    add rcx, rax
+
+    ; shift and saturate r
+    sar rcx, 6
+    cmp rcx, rbx
+    cmovge rcx, rbx ; 255
+    cmp rcx, rdx
+    cmovle rcx, rdx  ; if < 0, then = 0
+
+    mov [r11], cl ; write r
+
+    ; g = 64 * y - 22 * cb - 46 * cr + 68 * 128
+    mov rcx, r12
+
+    lea rax, [r13 - 128] ; cb
+    imul rax, 22 ; rax = (cb - 128) * 22
+    sub rcx, rax
+
+    lea rax, [r14 - 128] ; cr - 128
+    imul rax, 46 ; rax = (cb - 128) * 22
+    sub rcx, rax
+
+    ; shift and saturate g
+    sar rcx, 6
+    cmp rcx, rbx
+    cmovge rcx, rbx ; 255
+    cmp rcx, rdx
+    cmovle rcx, rdx ; if < 0, then = 0
+
+    mov [r11 + 1], cl
+
+    ; b = 64 * y - 22 * cb - 46 * cr + 68 * 128
+    mov rcx, r12
+
+    lea rax, [r13 - 128] ; cb
+    imul rax, 113 ; rax = (cb - 128) * 113
+    add rcx, rax
+
+    ; shift and saturate b
+    sar rcx, 6
+    cmp rcx, rbx
+    cmovge rcx, rbx ; 255
+    cmp rcx, rdx
+    cmovle rcx, rdx ; if < 0, then = 0
+
+    mov [r11 + 2], cl
+
+    pop rax
+
+    add r10, 4
+    add r11, 3
+    dec rax
+    jnz MANUAL_YUV2RGB_LOOP
+
+    ; restore registers
+    pop rbx
+    pop r14
+    pop r13
+    pop r12
+    pop rdx
+    pop rcx
+    jmp FINISHED_ROW

@@ -13,10 +13,17 @@ add_executable(rgb_converter main.c
         converters.h
         test_utils.h
         test_utils.c
+
         src/float_cnvrt.c
         src/fixed_cnvrt.c
         src/avx2_conv_yuv2rgb.asm
         src/avx2_conv_rgb2yuv.asm
+
+        tests.h
+        tests/test_isomorphism.c
+        tests/test_small_example.c
+        tests/test_compare_with_model.c
+        tests/test_performance.c
 )
 
 target_include_directories(rgb_converter PRIVATE ${CMAKE_SOURCE_DIR})

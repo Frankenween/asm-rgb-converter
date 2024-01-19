@@ -1,5 +1,7 @@
 #pragma once
 
+#include "color_structures.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -49,3 +51,7 @@ struct test_with_padding make_bounds(const struct test *base,
         allocator alloc, mem_free freeer);
 
 void free_test(struct test_with_padding *test, mem_free freeer);
+
+uint8_t get_rgb_delta(rgb p1, rgb p2);
+
+uint8_t get_yuv_delta(yuv p1, yuv p2);

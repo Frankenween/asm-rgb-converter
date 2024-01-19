@@ -116,24 +116,20 @@ rgb2yuv_avx2:
     je FINISHED_ROW
     MANUAL_LOOP:
     push rax
-    push rdx
 
     mov [r11], DWORD 0 ; clear place for yuv pixel
 
 ; y = 77 * r + 150 * g + 29 * b
     movzx rax, BYTE [r10] ; r
-    mov rdx, 77
-    mul rdx
+    imul rax, 77
     mov r12, rax ; r12 = 77 * r
 
     movzx rax, BYTE [r10 + 1] ; g
-    mov rdx, 150
-    mul rdx
+    imul rax, 150
     add r12, rax ; r12 = 77 * r + 150 * g
 
     movzx rax, BYTE [r10 + 2] ; b
-    mov rdx, 29
-    mul rdx
+    imul rax, 29
     add r12, rax ; r12 = 77 * r + 150 * g + 29 * b
 
     shr r12, 8
@@ -141,18 +137,15 @@ rgb2yuv_avx2:
 ; cb
     mov r12, 32767
     movzx rax, BYTE [r10] ; r
-    mov rdx, 43
-    mul rdx
+    imul rax, 43
     sub r12, rax ; r12 = 32767 - 43 * r
 
     movzx rax, BYTE [r10 + 1] ; g
-    mov rdx, 85
-    mul rdx
+    imul rax, 85
     sub r12, rax ; r12 = 32767 - 43 * r - 85 * g
 
     movzx rax, BYTE [r10 + 2] ; b
-    mov rdx, 128 ; shl?
-    mul rdx
+    shl rax, 7
     add r12, rax ; r12 = 32767 - 43 * r - 85 * g + 128 * b
 
     shr r12, 8
@@ -160,24 +153,20 @@ rgb2yuv_avx2:
 ; cr
     mov r12, 32767
     movzx rax, BYTE [r10] ; r
-    mov rdx, 128
-    mul rdx
+    shl rax, 7
     add r12, rax ; r12 = 32767 + 128 * r
 
     movzx rax, BYTE [r10 + 1] ; g
-    mov rdx, 107
-    mul rdx
+    imul rax, 107
     sub r12, rax ; r12 = 32767 + 128 * r - 107 * g
 
     movzx rax, BYTE [r10 + 2] ; b
-    mov rdx, 21 ; shl?
-    mul rdx
+    imul rax, 21
     sub r12, rax ; r12 = 32767 + 128 * r - 107 * g - 21 * b
 
     shr r12, 8
     mov [r11 + 2], r12b
 
-    pop rdx
     pop rax
 
     add r10, 3
