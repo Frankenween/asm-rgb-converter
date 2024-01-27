@@ -11,6 +11,10 @@ static const size_t TEST_PERFORMANCE[] = {
     1023, 4071, 7198
 };
 
+static const size_t TEST_PERFORMANCE_SMALL_WIDTH[] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+};
+
 static const size_t PADDINGS[] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 49
 };
@@ -21,6 +25,7 @@ static const size_t PERF_PADDINGS[] = {
 
 static const size_t CORRECTNESS_TEST_NUM = sizeof(TEST_CORRECTNESS) / sizeof(size_t);
 static const size_t PERF_TEST_NUM = sizeof(TEST_PERFORMANCE) / sizeof(size_t);
+static const size_t PERF_SMALL_WIDTH_TEST_NUM = sizeof(TEST_PERFORMANCE_SMALL_WIDTH) / sizeof(size_t);
 static const size_t PADDINGS_NUM = sizeof(PADDINGS) / sizeof(size_t);
 static const size_t PERF_PADDINGS_NUM = sizeof(PERF_PADDINGS) / sizeof(size_t);
 
@@ -54,4 +59,6 @@ int test_compare_with_model(
     converter model_rgb2yuv, converter model_yuv2rgb,
     const char* name);
 
-int test_pref_no_padding(converter rgb2yuv_conv, converter yuv2rgb_conv);
+int test_perf_no_padding(converter rgb2yuv_conv, converter yuv2rgb_conv);
+
+int test_perf_small_width(converter rgb2yuv_conv, converter yuv2rgb_conv);

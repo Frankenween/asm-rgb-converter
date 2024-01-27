@@ -3,6 +3,7 @@
 #include "tests.h"
 
 #include <stdio.h>
+#include <string.h>
 
 int test_fast_correctness(const converter rgb2yuv_conv, const converter yuv2rgb_conv, const char* name) {
     printf("Start correctness tests: %s\n", name);
@@ -20,7 +21,9 @@ int test_fast_correctness(const converter rgb2yuv_conv, const converter yuv2rgb_
 
 int test_performance(const converter rgb2yuv_conv, const converter yuv2rgb_conv, const char* name) {
     printf("Start performance test: %s\n", name);
-    test_pref_no_padding(rgb2yuv_conv, yuv2rgb_conv);
+    test_perf_no_padding(rgb2yuv_conv, yuv2rgb_conv);
+    printf("\n");
+    test_perf_small_width(rgb2yuv_conv, yuv2rgb_conv);
     printf("Finish performance test: %s\n\n", name);
     return 0;
 }
@@ -36,18 +39,21 @@ int test_full_correctness(const converter rgb2yuv_conv, const converter yuv2rgb_
     return result;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     converter rgb2yuv_check[] = {
         basic_fixed_rgb2yuv,
-        rgb2yuv_avx2
+        rgb2yuv_avx2,
+        rgb2yuv_avx2_improved
     };
     converter yuv2rgb_check[] = {
         basic_fixed_yuv2rgb,
-        yuv2rgb_avx2
+        yuv2rgb_avx2,
+        yuv2rgb_avx2_improved
     };
     const char* names[] = {
         "default fixed impl",
-        "avx2"
+        "avx2",
+        "avx2 improved"
     };
 
     for (size_t i = 0; i < sizeof(names) / sizeof(char*); i++) {
@@ -58,8 +64,10 @@ int main() {
         test_performance(rgb2yuv_check[i], yuv2rgb_check[i], names[i]);
     }
 
-    for (size_t i = 0; i < sizeof(names) / sizeof(char*); i++) {
-        test_full_correctness(rgb2yuv_check[i], yuv2rgb_check[i], names[i]);
+    if (argc > 1 && strcmp(argv[1], "full") == 0) {
+        for (size_t i = 0; i < sizeof(names) / sizeof(char*); i++) {
+            test_full_correctness(rgb2yuv_check[i], yuv2rgb_check[i], names[i]);
+        }
     }
     return 0;
 }

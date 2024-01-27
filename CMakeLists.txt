@@ -18,6 +18,8 @@ add_executable(rgb_converter main.c
         src/fixed_cnvrt.c
         src/avx2_conv_yuv2rgb.asm
         src/avx2_conv_rgb2yuv.asm
+        src/avx2_conv_rgb2yuv_improved.asm
+        src/axv2_conv_yuv2rgb_improved.asm
 
         tests.h
         tests/test_isomorphism.c
